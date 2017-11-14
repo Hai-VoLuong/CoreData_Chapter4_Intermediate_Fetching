@@ -48,6 +48,7 @@ class FilterViewController: UITableViewController {
 
   //MARK: - Properties
   var coreDataStack: CoreDataStack!
+
   lazy var cheapVenuePredicate: NSPredicate = {
     return NSPredicate(format: "%K == %@", #keyPath(Venue.priceInfo.priceCategory), "$")
   }()
@@ -66,6 +67,7 @@ class FilterViewController: UITableViewController {
     populateCheapVenueCountLabel()
     populateModerateVenueCountLabel()
     populateExpensiveVenueCountLabel()
+    populateDealsCountLabel()
   }
 
 }
@@ -127,6 +129,34 @@ extension FilterViewController {
     }
   }
 
+  func populateDealsCountLabel() {
+
+    let fetchRequest = NSFetchRequest<NSDictionary>(entityName: "Venue")
+    fetchRequest.resultType = .dictionaryResultType
+
+    // 2
+    let sumExpressionDesc = NSExpressionDescription()
+    sumExpressionDesc.name = "sumDeals"
+
+    // 3
+    let specialCountExp = NSExpression(forKeyPath: #keyPath(Venue.specialCount))
+    sumExpressionDesc.expression = NSExpression(forFunction: "sum:", arguments: [specialCountExp])
+    sumExpressionDesc.expressionResultType = .integer32AttributeType
+
+    // 4
+    fetchRequest.propertiesToFetch = [sumExpressionDesc]
+
+    // 5
+    do {
+      let results = try coreDataStack.managedContext.fetch(fetchRequest)
+      let resultDict = results.first!
+      let numDeals = resultDict["sumDeals"]!
+      numDealsLabel.text = "\(numDeals) total deals"
+
+    } catch let error as NSError {
+      print("Count not fetch \(error), \(error.userInfo)")
+    }
+  }
 }
 
 
