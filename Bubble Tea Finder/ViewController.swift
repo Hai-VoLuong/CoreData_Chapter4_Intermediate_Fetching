@@ -21,12 +21,16 @@
  */
 
 import UIKit
+import CoreData
 
-class ViewController: UIViewController {
+final class ViewController: UIViewController {
 
   // MARK: - Properties
   private let filterViewControllerSegueIdentifier = "toFilterViewController"
   fileprivate let venueCellIdentifier = "VenueCell"
+
+  var fetchRequest: NSFetchRequest<Venue>!
+  var venues: [Venue]!
 
   var coreDataStack: CoreDataStack!
 
@@ -36,6 +40,24 @@ class ViewController: UIViewController {
   // MARK: - View Life Cycle
   override func viewDidLoad() {
     super.viewDidLoad()
+
+    // 1: lấy table Venue theo FetchRequest
+    guard let model =  coreDataStack.managedContext.persistentStoreCoordinator?.managedObjectModel,
+          let fetchRequest = model.fetchRequestTemplate(forName: "FetchRequest")as? NSFetchRequest<Venue> else { return }
+    self.fetchRequest = fetchRequest
+
+    fetchAndReload()
+  }
+
+  // MARK: - Private Func
+  private func fetchAndReload() {
+    do {
+      // 2: use coreDataStack lấy dữ liệu
+      venues = try coreDataStack.managedContext.fetch(fetchRequest)
+      tableView.reloadData()
+    } catch let error as NSError {
+      print("Could not fetch \(error), Description \(error.userInfo)")
+    }
   }
 
   // MARK: - Navigation
@@ -57,13 +79,14 @@ extension ViewController {
 extension ViewController: UITableViewDataSource {
 
   func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    return 10
+    return venues.count
   }
 
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
     let cell = tableView.dequeueReusableCell(withIdentifier: venueCellIdentifier, for: indexPath)
-    cell.textLabel?.text = "Bubble Tea Venue"
-    cell.detailTextLabel?.text = "Price Info"
+    let venue = venues[indexPath.row]
+    cell.textLabel?.text = venue.name
+    cell.detailTextLabel?.text = venue.priceInfo?.priceCategory
     return cell
   }
 }
