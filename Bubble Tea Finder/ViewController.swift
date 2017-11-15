@@ -30,9 +30,10 @@ final class ViewController: UIViewController {
   fileprivate let venueCellIdentifier = "VenueCell"
 
   var fetchRequest: NSFetchRequest<Venue>!
-  var venues: [Venue]!
+  var venues: [Venue] = []
 
   var coreDataStack: CoreDataStack!
+  var asynsFetchRequest: NSAsynchronousFetchRequest<Venue>!
 
   // MARK: - IBOutlets
   @IBOutlet weak var tableView: UITableView!
@@ -42,8 +43,20 @@ final class ViewController: UIViewController {
     super.viewDidLoad()
 
     fetchRequest = Venue.fetchRequest()
+    asynsFetchRequest = NSAsynchronousFetchRequest<Venue>(fetchRequest: fetchRequest,
+                                                          completionBlock: { [unowned self] (result: NSAsynchronousFetchResult) in
+                                                            guard let venues = result.finalResult else { return }
+                                                            self.venues = venues
+                                                            self.tableView.reloadData()
+    })
 
-    fetchAndReload()
+    do {
+      try coreDataStack.managedContext.execute(asynsFetchRequest)
+    } catch let error as NSError {
+      print("count not fetch :\(error)")
+    }
+
+   // fetchAndReload()
   }
 
   // MARK: - Private Func
