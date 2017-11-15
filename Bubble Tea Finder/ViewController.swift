@@ -41,16 +41,13 @@ final class ViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    // 1: lấy table Venue theo FetchRequest
-    guard let model =  coreDataStack.managedContext.persistentStoreCoordinator?.managedObjectModel,
-          let fetchRequest = model.fetchRequestTemplate(forName: "FetchRequest")as? NSFetchRequest<Venue> else { return }
-    self.fetchRequest = fetchRequest
+    fetchRequest = Venue.fetchRequest()
 
     fetchAndReload()
   }
 
   // MARK: - Private Func
-  private func fetchAndReload() {
+  fileprivate func fetchAndReload() {
     do {
       // 2: use coreDataStack lấy dữ liệu
       venues = try coreDataStack.managedContext.fetch(fetchRequest)
@@ -65,6 +62,7 @@ final class ViewController: UIViewController {
     guard segue.identifier == filterViewControllerSegueIdentifier,
       let navController = segue.destination as? UINavigationController,
       let filterVC = navController.topViewController as? FilterViewController else { return }
+    filterVC.delegate = self
 
     filterVC.coreDataStack = coreDataStack
   }
@@ -92,3 +90,36 @@ extension ViewController: UITableViewDataSource {
     return cell
   }
 }
+
+// MARK: - FilterViewControllerDelegate
+extension ViewController: FilterViewControllerDelegate {
+  func filterViewController(filter: FilterViewController, didSelectPredicate predicate: NSPredicate?, sortDescriptor: NSSortDescriptor?) {
+    fetchRequest.predicate = nil
+    fetchRequest.sortDescriptors = nil
+    fetchRequest.predicate = predicate
+
+    if let sort = sortDescriptor { fetchRequest.sortDescriptors = [sort] }
+
+    fetchAndReload()
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
